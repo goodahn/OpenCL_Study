@@ -10,7 +10,8 @@ CCFLAGS=
 INC = -I$(CPP_COMMON) -I./
 
 LIBS = -lOpenCL -lrt
-MAIN_SRCS = main.cpp mnist.cpp
+MATRIX_SRCS = matrix_main.cpp
+MAIN_SRCS = mnist_main.cpp mnist.cpp
 DATA_SRCS = data_transfer.cpp
 TARGET = out
 
@@ -32,14 +33,17 @@ endif
 
 CCFLAGS += -D DEVICE=$(DEVICE)
 
-all: main data_transfer
+all: matrix_main mnist_main data_transfer
 
-main:
-	$(CPPC) $(MAIN_SRCS) $(INC) $(CCFLAGS) $(LIBS) -o main
+matrix_main:
+	$(CPPC) $(MATRIX_SRCS) $(INC) $(CCFLAGS) $(LIBS) -o matrix_main
 
 data_transfer:
 	$(CPPC) $(DATA_SRCS) $(INC) $(CCFLAGS) $(LIBS) -o data_transfer
 
+mnist_main:
+	$(CPPC) $(MAIN_SRCS) $(INC) $(CCFLAGS) $(LIBS) -o mnist_main
+
 
 clean:
-	rm -f main data_transfer *.o
+	rm -f mnist_main data_transfer matrix_main *.o

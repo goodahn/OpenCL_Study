@@ -20,10 +20,9 @@
 
 #define TOL    (0.001)   // tolerance used in floating point comparisons
 #define EPOCH (1000)
-#define NUM_LABELS (1)
+#define NUM_LABELS (10)
 #define STEP_SIZE (0.5)
 #define BATCH_SIZE (60)
-#define ITER_DEBUG
 
 using namespace std;
 
@@ -315,32 +314,12 @@ int main(void)
             cl::make_kernel<int, int, float, cl::Buffer, cl::Buffer> msub(program, "msub");
             cl::make_kernel<int, int, cl::Buffer, cl::Buffer> mnormalize(program, "mnormalize");
 
-            /*
-            cl::make_kernel<int, int, int, cl::Buffer, cl::Buffer, cl::Buffer> mmul22(program2, "mmul");
-            cl::make_kernel<int, int, int, cl::Buffer, cl::Buffer, cl::Buffer> mmul222(program2, "mmul2");
-            cl::make_kernel<int, cl::Buffer, cl::Buffer> madd2(program2, "madd");
-            cl::make_kernel<int, cl::Buffer, cl::Buffer> mexp2(program2, "mexp");
-            cl::make_kernel<int, float, cl::Buffer, cl::Buffer> msub2(program2, "msub");
-            cl::make_kernel<int, cl::Buffer, cl::Buffer> mnormalize2(program2, "mnormalize");
-            */
-
-            d_W = cl::Buffer(context, h_W.begin(), h_W.end() - h_W.size()/10, true);
-            d_W_ = cl::Buffer(context, h_W.begin(), h_W.end() - h_W.size()/10, true);
-            d_B = cl::Buffer(context, h_B.begin(), h_B.end() - h_B.size()/10, true);
-            d_Y = cl::Buffer(context, h_Y.begin(), h_Y.end() - h_B.size()/10, true);
+            d_W = cl::Buffer(context, h_W.begin(), h_W.end(), true);
+            d_W_ = cl::Buffer(context, h_W.begin(), h_W.end(), true);
+            d_B = cl::Buffer(context, h_B.begin(), h_B.end(), true);
+            d_Y = cl::Buffer(context, h_Y.begin(), h_Y.end(), true);
             d_SUM = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float));
             d_RESULT = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float));
-
-            /*
-            cl::Buffer d_W2 = cl::Buffer(context2, h_W.end() - h_W.size()/10, h_W.end(), true);
-            cl::Buffer d_W_2 = cl::Buffer(context2, h_W.end() - h_W.size()/10, h_W.end(), true);
-            cl::Buffer d_B2 = cl::Buffer(context2, h_B.end() - h_B.size()/10, h_B.end(), true);
-            cl::Buffer d_Y2 = cl::Buffer(context2, h_Y.end() - h_Y.size()/10, h_Y.end(), true);
-            cl::Buffer d_SUM2 = cl::Buffer(context2, CL_MEM_READ_WRITE, sizeof(float));
-            cl::Buffer d_RESULT2 = cl::Buffer(context2, CL_MEM_READ_WRITE, sizeof(float));
-            cl::Buffer d_X2;
-            cl::Buffer d_Y_2;
-            */
 
             queue.finish();
             cout << "Buffer creation finished" << endl;
@@ -356,13 +335,6 @@ int main(void)
             cl::NDRange global_mmul2(BATCH_SIZE);
             cl::NDRange global_msub(NUM_LABELS*image_size);
 
-            /*
-            cl::NDRange global_mmul22(image_size);
-            cl::NDRange global_mexp2(1*BATCH_SIZE);
-            cl::NDRange global_mmul222(BATCH_SIZE);
-            cl::NDRange global_msub2(NUM_LABELS*image_size);
-            */
-
             for (int i=0;i<EPOCH;i++) {
                 vector<char> tmp_images = data.get_batch_train_images(BATCH_SIZE);
                 vector<float> tmp_labels = data.get_batch_train_labels(BATCH_SIZE);
@@ -371,10 +343,6 @@ int main(void)
                 d_X = cl::Buffer(context, tmp_images.begin(), tmp_images.end(), true);
                 d_Y_ = cl::Buffer(context, tmp_labels.begin(), tmp_labels.end(), true);
                 // device 1
-                /*
-                d_X2 = cl::Buffer(context2, tmp_images.end() - tmp_images.size()/10, tmp_images.end(), true);
-                d_Y_2 = cl::Buffer(context2, tmp_labels.end() - tmp_labels.size()/10, tmp_labels.end(), true);
-                */
 
 #ifdef ITER_DEBUG
                 queue.finish();
@@ -393,12 +361,6 @@ int main(void)
                         NUM_LABELS-1, image_size, NUM_LABELS, BATCH_SIZE, d_W, d_X, d_Y);
                 madd(cl::EnqueueArgs(queue2, global_mexp),
                         (NUM_LABELS-1)*BATCH_SIZE, NUM_LABELS*BATCH_SIZE, d_B, d_Y);
-                /*
-                mmul22(cl::EnqueueArgs(queue2, global_mmul22),
-                        image_size, 1, BATCH_SIZE, d_W2, d_X2, d_Y2);
-                madd2(cl::EnqueueArgs(queue2, global_mexp2),
-                        1*(BATCH_SIZE), d_B2, d_Y2);
-                        */
 #ifdef ITER_DEBUG
                 queue.finish();
                 cout << i << " Iteration finish Wx+b" << endl;
@@ -438,10 +400,6 @@ int main(void)
                 // device1
                 msub(cl::EnqueueArgs(queue, global_mexp),
                         (NUM_LABELS-1)*(BATCH_SIZE), NUM_LABELS*(BATCH_SIZE), 1.0, d_Y_, d_Y);
-                /*
-                msub2(cl::EnqueueArgs(queue2, global_mexp2),
-                        1*BATCH_SIZE, 1.0, d_Y_2, d_Y2);
-                        */
 #ifdef ITER_DEBUG
                 queue.finish();
                 cout << i << " Iteration mexp finished" << endl;
@@ -452,10 +410,6 @@ int main(void)
                 // device 1
                 mmul2(cl::EnqueueArgs(queue2, global_mmul2),
                         NUM_LABELS-1,BATCH_SIZE, NUM_LABELS, image_size, d_Y, d_X, d_W_);
-                /*
-                mmul222(cl::EnqueueArgs(queue2, global_mmul222),
-                        BATCH_SIZE, 1, image_size, d_Y2, d_X2, d_W_2);
-                        */
 #ifdef ITER_DEBUG
                 queue.finish();
                 cout << i << " Iteration mmul finished" << endl;
@@ -466,10 +420,6 @@ int main(void)
                 // device 1
                 msub(cl::EnqueueArgs(queue2, global_msub),
                         (NUM_LABELS-1)*image_size, NUM_LABELS*image_size, 0.5, d_W_, d_W);
-                /*
-                msub2(cl::EnqueueArgs(queue2, global_msub2),
-                        1*image_size, 0.5, d_W_2, d_W2);
-                        */
 #ifdef ITER_DEBUG
                 queue.finish();
                 cout << i << " Iteration finished" << endl;
@@ -480,20 +430,6 @@ int main(void)
 
             double rtime = static_cast<double>(timer.getTimeMilliseconds()) / 1000.0;
             printf("\nTrain ends in %lf seconds\n", rtime);
-
-            /*
-            cl::copy(queue, d_W, h_W.begin(), h_W.end() - h_W.size()/10);
-            cl::copy(queue, d_B, h_B.begin(), h_B.end() - h_B.size()/10);
-            cl::copy(queue2, d_W2, h_W.end() - h_W.size()/10, h_W.end());
-            cl::copy(queue2, d_B2, h_B.end() - h_B.size()/10, h_B.end());
-
-            d_W = cl::Buffer(context, h_W.begin(), h_W.end(), true);
-            d_B = cl::Buffer(context, h_B.begin(), h_B.end(), true);
-
-            queue.finish();
-            rtime = static_cast<double>(timer.getTimeMilliseconds()) / 1000.0;
-            cout << "Finish mergin data in " << rtime << " seconds" << endl;
-            */
 
             int correct_num = 0;
             /*
