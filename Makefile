@@ -5,7 +5,7 @@ endif
 
 CPP_COMMON = Cpp_common
 
-CCFLAGS=
+CCFLAGS=-std=c++11
 
 INC = -I$(CPP_COMMON) -I./
 
@@ -27,7 +27,7 @@ endif
 PLATFORM = $(shell uname -s)
 ifeq ($(PLATFORM), Darwin)
 	CPPC = clang++
-	CCFLAGS += -stdlib=libc++
+	CCFLAGS += -stdlib=c++11
 	LIBS = -framework OpenCL
 endif
 
